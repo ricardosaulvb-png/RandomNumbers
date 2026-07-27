@@ -1,12 +1,12 @@
 #ifndef LIBRERIA_RANDOM_H
 #define LIBRERIA_RANDOM_H
 
-#include <ctime> 
+#include <chrono> 
 
 
 inline int aleatorio()
 {
-    long tiempo = time(0);
+    long tiempo = std::chrono::high_resolution_clock::now().time_since_epoch().count();
     int numbase = (tiempo % 60) + ((tiempo / 60) % 60);
 
     numbase = numbase + 1;
