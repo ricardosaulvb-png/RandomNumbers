@@ -8,7 +8,7 @@
 inline int aleatorio()
 {
     long tiempo = std::chrono::steady_clock::now().time_since_epoch().count();
-    int numbase = (tiempo % 60) + ((tiempo / 60) % 60);
+    int numbase = static_cast<int>(tiempo); 
 
     static std::vector<std::vector<int>> historial;
 
