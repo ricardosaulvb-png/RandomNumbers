@@ -1,0 +1,118 @@
+import math
+import collections
+import matplotlib.pyplot as plt
+from scipy.stats import chisquare
+
+# 1. RUTA DIRECTA AL ARCHIVO GENERADO POR TU C++ (Escritorio de Acer)
+ruta_archivo = "C:/Users/Acer/Desktop/datos_random.txt"
+
+try:
+    with open(ruta_archivo, "r") as f:
+        numeros = [int(line.strip()) for line in f if line.strip()]
+except FileNotFoundError:
+    print(f"Error: No se encontro el archivo 'datos_random.txt' en {ruta_archivo}.")
+    print("Asegurate de haber ejecutado tu programa de C++ primero.")
+    input("\nPresiona Enter para salir...")
+    exit()
+
+total_numeros = len(numeros)
+print("=" * 65)
+print(f"=== LABORATORIO ESTADÍSTICO UNIFICADO: {total_numeros} MUESTRAS ===")
+print("=" * 65 + "\n")
+
+# ====================================================
+# PRUEBA 1: ENTROPÍA DE SHANNON (Por Bytes) - CORREGIDA
+# ====================================================
+bytes_datos = []
+for n in numeros:
+    bytes_datos.extend(int.to_bytes(n & 0xFFFFFFFF, 4, byteorder='big', signed=False))
+
+conteos = collections.Counter(bytes_datos)
+entropia = 0.0
+for c in conteos.values():
+    p = c / len(bytes_datos)
+    entropia -= p * math.log2(p)
+
+print(f"1. Entropia de Shannon: {entropia:.6f} bits por byte")
+print(f"   EVALUACIÓN: Una entropia cercana a 8 indica una alta diversidad de simbolos,")
+print(f"   pero NO demuestra seguridad criptografica (Ideal Teorico: 8.000000).\n")
+
+# ====================================================
+# PRUEBA 2: PRUEBA MONOBIT (Frecuencia de Bits Puros) - CORREGIDA
+# ====================================================
+# Evaluamos los bits reales de los bytes extraídos de forma matemática pura
+total_bits = len(bytes_datos) * 8
+unos = 0
+for b in bytes_datos:
+    # Contamos cuántos bits '1' hay en el byte usando operaciones de bits nativas
+    for i in range(8):
+        if (b >> i) & 1:
+            unos += 1
+
+porcentaje_unos = (unos / total_bits) * 100
+print(f"2. Prueba Monobit (Frecuencia Binaria):")
+print(f"   Unos: {porcentaje_unos:.2f}% | Ceros: {100 - porcentaje_unos:.2f}%")
+print(f"   EVALUACIÓN: El balance ideal estricto es 50.00% / 50.00%.\n")
+
+# ====================================================
+# PRUEBA 3: PRUEBA DE CHI-CUADRADO (Uniformidad) - VEREDICTO FIJO
+# ====================================================
+num_cajas = 100
+min_val, max_val = min(numeros), max(numeros)
+rango = (max_val - min_val) if max_val != min_val else 1
+
+cajas = [0] * num_cajas
+for n in numeros:
+    pos = int(((n - min_val) / rango) * (num_cajas - 1))
+    if pos < 0: pos = 0
+    if pos >= num_cajas: pos = num_cajas - 1
+    cajas[pos] += 1
+
+esperado = total_numeros / num_cajas
+esperados = [esperado] * num_cajas
+
+estadistico_chi, p_valor = chisquare(cajas, f_exp=esperados)
+print(f"3. Prueba de Chi-Cuadrado (Uniformidad Estadistica):")
+print(f"   P-Valor: {p_valor:.6f}")
+if p_valor > 0.05:
+    print(f"   VERDICTO: PASÓ (Los numeros se distribuyen uniformemente en el espacio)")
+else:
+    print(f"   VERDICTO: FALLÓ (La estructura lineal del steady_clock altera la uniformidad global)")
+print()
+
+# ====================================================
+# PRUEBA 4: AUTOCORRELACIÓN (Dependencia de Vecinos)
+# ====================================================
+media = sum(numeros) / total_numeros
+num_var = sum((n - media) ** 2 for n in numeros)
+if num_var == 0: num_var = 1
+
+num_covar = sum((numeros[i] - media) * (numeros[i+1] - media) for i in range(total_numeros - 1))
+autocorrelacion = num_covar / num_var
+
+print(f"4. Coeficiente de Autocorrelacion Lineal:")
+print(f"   Resultado: {autocorrelacion:.6f}")
+print(f"   EVALUACIÓN: Un valor cercano a 0.000000 confirma la independencia entre vecinos.\n")
+
+print("-" * 65)
+print("Abriendo el Grafico de Dispersión XY... Cierre la ventana para terminar.")
+print("-" * 65)
+
+# ====================================================
+# VISUALIZACIÓN: DIAGRAMA DE DISPERSIÓN XY
+# ====================================================
+muestras_grafica = numeros[:50000]
+X = muestras_grafica[:-1]
+Y = muestras_grafica[1:]
+
+plt.figure(figsize=(8, 8))
+plt.scatter(X, Y, s=0.1, c='blue', alpha=0.5)
+
+plt.title('Prueba de Caos XY - Algoritmo con Barajado de Bits (Thomas Wang)')
+plt.xlabel('Numero Actual (Coordenada X)')
+plt.ylabel('Siguiente Numero (Coordenada Y)')
+plt.grid(True, linestyle='--', alpha=0.5)
+
+plt.show()
+
+input("\nPresiona Enter para cerrar el laboratorio por completo...")
